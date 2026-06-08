@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: king-garant-bot
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install -g pnpm@10 && pnpm install --frozen-lockfile && pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build
+    startCommand: node --enable-source-maps artifacts/api-server/dist/index.mjs
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
