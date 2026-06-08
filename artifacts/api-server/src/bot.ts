@@ -195,7 +195,7 @@ export function createBot() {
     );
   });
 
-  // /add <userId> <amount> <currency> — пополнение баланса (для администратора)
+  // /add <userId> <amount> <currency> — пополнение баланса
   bot.command("add", async (ctx) => {
     const args = (ctx.match as string | undefined)?.split(" ");
     if (!args || args.length < 3) {
@@ -226,7 +226,7 @@ export function createBot() {
     }
   });
 
-  // /add_deals <userId> <count> — накрутить успешные сделки (администратор)
+  // /add_deals <userId> <count> — накрутить успешные сделки
   bot.command("add_deals", async (ctx) => {
     const args = (ctx.match as string | undefined)?.split(" ");
     if (!args || args.length < 2) {
@@ -261,13 +261,13 @@ export function createBot() {
       "/instruction — как создать сделку\n" +
       "/support — написать в поддержку\n" +
       "/help — помощь\n\n" +
-      "👥 *В группе:*\n" +
+      "👥 *В группе / личном чате:*\n" +
       "/deals — список активных сделок\n" +
-      "/bot — эта справка\n\n" +
-      "🛡️ *Для администратора:*\n" +
+      "/bot — эта справка\n" +
       "/add \\<userId\\> \\<сумма\\> \\<валюта\\> — пополнить баланс\n" +
       "/add\\_deals \\<userId\\> \\<кол\\-во\\> — накрутить успешные сделки\n\n" +
-      "💬 *Валюты:* `грн`, `руб`, `ton`, `звезды`",
+      "💬 *Валюты:* `грн`, `руб`, `ton`, `звезды`\n" +
+      "📌 *Пример:* `/add 123456789 500 руб`",
       { parse_mode: "MarkdownV2" },
     );
   });
