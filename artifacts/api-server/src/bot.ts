@@ -334,14 +334,14 @@ export function createBot() {
     if (!isPrivate(ctx)) return;
     const allDeals = await db.select().from(dealsTable);
     const paid = allDeals.filter(d => d.status === "paid").length;
-    const total = Math.max(paid + 19783, 19783);
+    const total = Math.max(paid + 10000, 10000);
     const caption =
       "📊 *Статистика King Garant Bot*\n\n" +
-      `🤝 Успешных сделок: *${total.toLocaleString("ru-RU")}*\n` +
-      "👥 Всего пользователей: *48 294*\n" +
+      `🤝 Успешных сделок: *${total.toLocaleString("ru-RU")}\\+*\n` +
+      "👥 Всего пользователей: *15 000\\+*\n" +
+      "⭐ Средний рейтинг: *4\\.8 / 5\\.0*\n" +
       "⚡ Среднее время ответа: *0\\.2 сек*\n" +
       "🛡️ Безопасность: *100%*\n" +
-      "💰 Оборот: *2 847 950 RUB*\n" +
       "📅 Работаем с: *2023 года*\n\n" +
       "🔒 За всё время — *ни одного случая мошенничества* через нашего гаранта\\.";
     await sendPhoto(bot, ctx.chat!.id, "stats.png", caption, {
