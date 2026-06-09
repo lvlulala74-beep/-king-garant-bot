@@ -21,7 +21,6 @@ if (bot) {
   const isProduction = process.env.NODE_ENV === "production";
 
   if (isProduction) {
-    // Determine public URL — try env vars, then fall back to hardcoded Render URL
     const replitDomains = process.env.REPLIT_DOMAINS;
     const renderEnvUrl = process.env.RENDER_EXTERNAL_URL?.replace(/\/$/, "");
     const renderHardcoded = "https://king-garant-bot-id5t.onrender.com";
@@ -46,11 +45,9 @@ if (bot) {
 
     logger.info({ publicUrl }, "Telegram bot running in webhook mode");
   } else {
-    // Long polling for local dev in Replit
-    bot.start({
-      onStart: (info) => logger.info({ username: info.username }, "Bot started (polling)"),
-    }).catch((err) => logger.error({ err }, "Bot crashed"));
-    logger.info("Telegram bot starting in polling mode...");
+    // Dev mode: do NOT run the bot locally — only Render runs it.
+    // This prevents polling from stealing updates away from the Render webhook.
+    logger.info("Dev mode: bot is disabled locally — runs only on Render (production)");
   }
 }
 
