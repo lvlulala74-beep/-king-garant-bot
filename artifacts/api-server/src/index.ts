@@ -21,37 +21,32 @@ if (bot) {
   const isProduction = process.env.NODE_ENV === "production";
 
   if (isProduction) {
-    // Determine public URL: Replit deployment or Render
+    // Determine public URL — try env vars, then fall back to hardcoded Render URL
     const replitDomains = process.env.REPLIT_DOMAINS;
-    const renderUrl = process.env.RENDER_EXTERNAL_URL?.replace(/\/$/, "");
+    const renderEnvUrl = process.env.RENDER_EXTERNAL_URL?.replace(/\/$/, "");
+    const renderHardcoded = "https://king-garant-bot-id5t.onrender.com";
 
-    let publicUrl: string | null = null;
-
+    let publicUrl: string;
     if (replitDomains) {
-      const firstDomain = replitDomains.split(",")[0].trim();
-      publicUrl = `https://${firstDomain}`;
-    } else if (renderUrl) {
-      publicUrl = renderUrl;
-    }
-
-    if (!publicUrl) {
-      logger.error("No public URL found (REPLIT_DOMAINS or RENDER_EXTERNAL_URL) — falling back to polling");
-      bot.start({
-        onStart: (info) => logger.info({ username: info.username }, "Bot started (polling fallback)"),
-      }).catch((err) => logger.error({ err }, "Bot crashed"));
+      publicUrl = `https://${replitDomains.split(",")[0].trim()}`;
+    } else if (renderEnvUrl) {
+      publicUrl = renderEnvUrl;
     } else {
-      const webhookPath = "/api/telegram/webhook";
-      const webhookUrl = `${publicUrl}${webhookPath}`;
-
-      bot.api.setWebhook(webhookUrl, { drop_pending_updates: true })
-        .then(() => logger.info({ webhookUrl }, "Telegram webhook set"))
-        .catch((err) => logger.error({ err }, "Failed to set webhook"));
-
-      app.post(webhookPath, webhookCallback(bot, "express"));
-      logger.info({ publicUrl }, "Telegram bot running in webhook mode");
+      publicUrl = renderHardcoded;
     }
+
+    const webhookPath = "/api/telegram/webhook";
+    const webhookUrl = `${publicUrl}${webhookPath}`;
+
+    app.post(webhookPath, webhookCallback(bot, "express"));
+
+    bot.api.setWebhook(webhookUrl, { drop_pending_updates: true })
+      .then(() => logger.info({ webhookUrl }, "Telegram webhook set"))
+      .catch((err) => logger.error({ err }, "Failed to set webhook"));
+
+    logger.info({ publicUrl }, "Telegram bot running in webhook mode");
   } else {
-    // Long polling for local development in Replit
+    // Long polling for local dev in Replit
     bot.start({
       onStart: (info) => logger.info({ username: info.username }, "Bot started (polling)"),
     }).catch((err) => logger.error({ err }, "Bot crashed"));
