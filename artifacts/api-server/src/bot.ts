@@ -9,7 +9,14 @@ import fs from "fs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SUPPORT_USERNAME = "@king_helper";
-const GROUP_CHAT_ID = -1003841813791;
+
+// Група для повідомлень про нові сделки (публічна)
+const DEALS_GROUP_ID = Number(process.env.DEALS_GROUP_ID ?? "-1003841813791");
+// Група для адмін-команд /add /add_deals /deals (приватна адмінка)
+const ADMIN_GROUP_ID = Number(process.env.ADMIN_GROUP_ID ?? "-1003841813791");
+
+// Залишаємо для зворотньої сумісності
+const GROUP_CHAT_ID = DEALS_GROUP_ID;
 
 type Currency = "hrn" | "rub" | "ton" | "stars";
 
@@ -195,8 +202,23 @@ export function createBot() {
     );
   });
 
-  // /add <userId> <amount> <currency> — пополнение баланса
+  // get id — показывает ID текущего чата (работает везде)
+  bot.hears(/^get id$/i, async (ctx) => {
+    const chatId = ctx.chat?.id;
+    const chatType = ctx.chat?.type ?? "unknown";
+    const chatTitle = "title" in (ctx.chat ?? {}) ? (ctx.chat as { title?: string }).title : "Личный чат";
+    await ctx.reply(
+      `🆔 *ID этого чата:* \`${chatId}\`\n📂 Тип: ${chatType}\n💬 Название: ${esc(chatTitle ?? "—")}`,
+      { parse_mode: "MarkdownV2" },
+    );
+  });
+
+  // /add <userId> <amount> <currency> — пополнение баланса (только в ADMIN_GROUP_ID)
   bot.command("add", async (ctx) => {
+    if (ctx.chat?.type !== "private" && ctx.chat?.id !== ADMIN_GROUP_ID) {
+      await ctx.reply("❌ Эта команда доступна только в админ\\-группе\\.", { parse_mode: "MarkdownV2" });
+      return;
+    }
     const args = (ctx.match as string | undefined)?.split(" ");
     if (!args || args.length < 3) {
       await ctx.reply("❌ Неверный формат\\.\n\n✅ *Правильно:* `/add 123456789 500 руб`\nВалюты: `грн, руб, ton, звезды`", { parse_mode: "MarkdownV2" });
@@ -226,8 +248,12 @@ export function createBot() {
     }
   });
 
-  // /add_deals <userId> <count> — накрутить успешные сделки
+  // /add_deals <userId> <count> — накрутить успешные сделки (только в ADMIN_GROUP_ID)
   bot.command("add_deals", async (ctx) => {
+    if (ctx.chat?.type !== "private" && ctx.chat?.id !== ADMIN_GROUP_ID) {
+      await ctx.reply("❌ Эта команда доступна только в админ\\-группе\\.", { parse_mode: "MarkdownV2" });
+      return;
+    }
     const args = (ctx.match as string | undefined)?.split(" ");
     if (!args || args.length < 2) {
       await ctx.reply("❌ Формат: `/add_deals 123456789 10`", { parse_mode: "MarkdownV2" });
