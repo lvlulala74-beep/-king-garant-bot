@@ -10,12 +10,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SUPPORT_USERNAME = "@king_helper";
 
-// Група для повідомлень про нові сделки (публічна)
-const DEALS_GROUP_ID = Number(process.env.DEALS_GROUP_ID ?? "-1003841813791");
-// Група для адмін-команд /add /add_deals /deals (приватна адмінка)
-const ADMIN_GROUP_ID = Number(process.env.ADMIN_GROUP_ID ?? "-1003841813791");
+// Супергрупа з темами (forum supergroup)
+const GROUP_ID = Number(process.env.GROUP_ID ?? "-1003927899740");
+// Тема №8 — адмін-команди (/add, /add_deals, /deals)
+const ADMIN_THREAD_ID = Number(process.env.ADMIN_THREAD_ID ?? "8");
+// Тема №9 — сповіщення про нові/оплачені угоди
+const DEALS_THREAD_ID = Number(process.env.DEALS_THREAD_ID ?? "9");
 
-// Залишаємо для зворотньої сумісності
+// Зворотня сумісність зі старими змінними
+const DEALS_GROUP_ID = Number(process.env.DEALS_GROUP_ID ?? GROUP_ID);
+const ADMIN_GROUP_ID = Number(process.env.ADMIN_GROUP_ID ?? GROUP_ID);
 const GROUP_CHAT_ID = DEALS_GROUP_ID;
 
 type Currency = "hrn" | "rub" | "ton" | "stars";
@@ -213,10 +217,22 @@ export function createBot() {
     );
   });
 
+  // Перевірка: чи повідомлення надіслане в адмін-тему групи
+  function isAdminThread(ctx: MyContext): boolean {
+    const chat = ctx.chat;
+    if (!chat) return false;
+    if (chat.type === "private") return true; // ЛС завжди дозволено
+    if (chat.id !== ADMIN_GROUP_ID) return false;
+    // Якщо ADMIN_THREAD_ID = 0 — будь-яка тема дозволена
+    if (ADMIN_THREAD_ID === 0) return true;
+    const threadId = (ctx.message as { message_thread_id?: number } | undefined)?.message_thread_id;
+    return threadId === ADMIN_THREAD_ID;
+  }
+
   // /add <userId> <amount> <currency> — пополнение баланса (только в ADMIN_GROUP_ID)
   bot.command("add", async (ctx) => {
-    if (ctx.chat?.type !== "private" && ctx.chat?.id !== ADMIN_GROUP_ID) {
-      await ctx.reply("❌ Эта команда доступна только в админ\\-группе\\.", { parse_mode: "MarkdownV2" });
+    if (!isAdminThread(ctx)) {
+      await ctx.reply("❌ Эта команда доступна только в теме администраторов\\.", { parse_mode: "MarkdownV2" });
       return;
     }
     const args = (ctx.match as string | undefined)?.split(" ");
@@ -248,10 +264,10 @@ export function createBot() {
     }
   });
 
-  // /add_deals <userId> <count> — накрутить успешные сделки (только в ADMIN_GROUP_ID)
+  // /add_deals <userId> <count> — накрутить успешные сделки (только в адмін-темі)
   bot.command("add_deals", async (ctx) => {
-    if (ctx.chat?.type !== "private" && ctx.chat?.id !== ADMIN_GROUP_ID) {
-      await ctx.reply("❌ Эта команда доступна только в админ\\-группе\\.", { parse_mode: "MarkdownV2" });
+    if (!isAdminThread(ctx)) {
+      await ctx.reply("❌ Эта команда доступна только в теме администраторов\\.", { parse_mode: "MarkdownV2" });
       return;
     }
     const args = (ctx.match as string | undefined)?.split(" ");
@@ -483,7 +499,7 @@ export function createBot() {
         });
       } catch {}
 
-      // Уведомление в группу
+      // Уведомление в тему №9 (DEALS_THREAD_ID)
       const groupCaption =
         `💰 *Новая оплаченная сделка\\!*\n\n` +
         `📦 Товар: ${esc(deal.title)}\n` +
@@ -495,6 +511,7 @@ export function createBot() {
       try {
         await sendPhoto(bot, GROUP_CHAT_ID, "deal_paid.png", groupCaption, {
           parse_mode: "MarkdownV2",
+          message_thread_id: DEALS_THREAD_ID,
         });
       } catch {}
 
@@ -550,7 +567,7 @@ export function createBot() {
         reply_markup: mainMenu(),
       });
 
-      // Уведомление в группу о новой сделке
+      // Уведомление в тему №9 (DEALS_THREAD_ID)
       const groupCaption =
         `📋 *Новая сделка создана\\!*\n\n` +
         `📦 Товар: ${esc(title)}\n` +
@@ -560,6 +577,7 @@ export function createBot() {
       try {
         await sendPhoto(bot, GROUP_CHAT_ID, "deal_created.png", groupCaption, {
           parse_mode: "MarkdownV2",
+          message_thread_id: DEALS_THREAD_ID,
         });
       } catch {}
 
