@@ -2,6 +2,8 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { createBot } from "./bot";
 import { webhookCallback } from "grammy";
+import https from "https";
+import http from "http";
 
 const rawPort = process.env["PORT"];
 
@@ -44,9 +46,28 @@ if (bot) {
       .catch((err) => logger.error({ err }, "Failed to set webhook"));
 
     logger.info({ publicUrl }, "Telegram bot running in webhook mode");
+
+    // Self-ping every 4 minutes so Render Free never sleeps
+    const pingUrl = `${publicUrl}/api/healthz`;
+    const pingInterval = 4 * 60 * 1000;
+
+    setTimeout(() => {
+      const doPing = () => {
+        const lib = pingUrl.startsWith("https") ? https : http;
+        const req = lib.get(pingUrl, (res) => {
+          logger.info({ status: res.statusCode }, "Self-ping OK");
+        });
+        req.on("error", (err) => {
+          logger.warn({ err: err.message }, "Self-ping failed");
+        });
+        req.end();
+      };
+
+      doPing();
+      setInterval(doPing, pingInterval);
+      logger.info({ pingUrl, intervalMin: 4 }, "Self-ping keepalive started");
+    }, 30_000); // Запустити через 30 сек після старту
   } else {
-    // Dev mode: do NOT run the bot locally — only Render runs it.
-    // This prevents polling from stealing updates away from the Render webhook.
     logger.info("Dev mode: bot is disabled locally — runs only on Render (production)");
   }
 }
